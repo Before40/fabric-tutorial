@@ -134,3 +134,374 @@ Organizations:
             - Host: peer0.org1.example.com
               Port: 7051
 ```
+
+**Capabilities**定义fabric网络的能力。v1.1的新概念，不能和v1.0.x的混合使用。
+Capabilities定义了在fabric中必须实现的特征，fabric binary安全加入到fabric网络中。如，加入了一个新的MSP类型，新的binaries会识别和验证签名，而老的binariers没有这个支持的不能验证这个交易。这个会导致不同版本的fabric binaries有不同的世界状态。相反，定义一个通道，他的功能是通知其他没有这个能力的binaries必须停止处理交易直到他们更新为止。
+```yaml
+Capabilities:
+    # Global capabilities apply to both the orderers and the peers and must be
+    # supported by both.  Set the value of the capability to true to require it.
+    Channel: &ChannelCapabilities
+        # V1.1 for Global is a catchall flag for behavior which has been
+        # determined to be desired for all orderers and peers running v1.0.x,
+        # but the modification of which would cause imcompatibilities.  Users
+        # should leave this flag set to true.
+        V1_1: true
+
+    # Orderer capabilities apply only to the orderers, and may be safely
+    # manipulated without concern for upgrading peers.  Set the value of the
+    # capability to true to require it.
+    Orderer: &OrdererCapabilities
+        # V1.1 for Order is a catchall flag for behavior which has been
+        # determined to be desired for all orderers running v1.0.x, but the
+        # modification of which  would cause imcompatibilities.  Users should
+        # leave this flag set to true.
+        V1_1: true
+
+    # Application capabilities apply only to the peer network, and may be safely
+    # manipulated without concern for upgrading orderers.  Set the value of the
+    # capability to true to require it.
+    Application: &ApplicationCapabilities
+        # V1.1 for Application is a catchall flag for behavior which has been
+        # determined to be desired for all peers running v1.0.x, but the
+        # modification of which would cause incompatibilities.  Users should
+        # leave this flag set to true.
+        V1_2: true
+```
+**Orderer**定义了需要编码进配置交易或创世块中的与orderer相关的值
+```yaml
+Orderer: &OrdererDefaults
+
+    # Orderer Type: The orderer implementation to start
+    # Available types are "solo" and "kafka"
+    OrdererType: solo
+
+    Addresses:
+        - orderer.example.com:7050
+
+    # Batch Timeout: The amount of time to wait before creating a batch
+    BatchTimeout: 500ms
+
+    # Batch Size: Controls the number of messages batched into a block
+    BatchSize:
+
+        # Max Message Count: The maximum number of messages to permit in a batch
+        MaxMessageCount: 10
+
+        # Absolute Max Bytes: The absolute maximum number of bytes allowed for
+        # the serialized messages in a batch.
+        AbsoluteMaxBytes: 98 MB
+
+        # Preferred Max Bytes: The preferred maximum number of bytes allowed for
+        # the serialized messages in a batch. A message larger than the preferred
+        # max bytes will result in a batch larger than preferred max bytes.
+        PreferredMaxBytes: 512 KB
+
+    # Max Channels is the maximum number of channels to allow on the ordering
+    # network. When set to 0, this implies no maximum number of channels.
+    MaxChannels: 0
+
+    Kafka:
+        # Brokers: A list of Kafka brokers to which the orderer connects
+        # NOTE: Use IP:port notation
+        Brokers:
+            - 127.0.0.1:9092
+
+    # Organizations is the list of orgs which are defined as participants on
+    # the orderer side of the network
+    Organizations:
+
+    # Policies defines the set of policies at this level of the config tree
+    # For Orderer policies, their canonical path is
+    #   /Channel/Orderer/<PolicyName>
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        # BlockValidation specifies what signatures must be included in the block
+        # from the orderer for the peer to validate it.
+        BlockValidation:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+
+    # Capabilities describes the orderer level capabilities, see the
+    # dedicated Capabilities section elsewhere in this file for a full
+    # description
+    Capabilities:
+        <<: *OrdererCapabilities
+```
+**Applications**和应用相关的参数需要加入到配置交易或者创世块的值
+```yaml
+Application: &ApplicationDefaults
+    ACLs: &ACLsDefault
+        #This section provides defaults for policies for various resources
+        #in the system. These "resources" could be functions on system chaincodes
+        #(e.g., "GetBlockByNumber" on the "qscc" system chaincode) or other resources
+        #(e.g.,who can receive Block events). This section does NOT specify the resource's
+        #definition or API, but just the ACL policy for it.
+        #
+        #User's can override these defaults with their own policy mapping by defining the
+        #mapping under ACLs in their channel definition
+
+        #---Lifecycle System Chaincode (lscc) function to policy mapping for access control---#
+
+        #ACL policy for lscc's "getid" function
+        lscc/ChaincodeExists: /Channel/Application/Readers
+
+        #ACL policy for lscc's "getdepspec" function
+        lscc/GetDeploymentSpec: /Channel/Application/Readers
+
+        #ACL policy for lscc's "getccdata" function
+        lscc/GetChaincodeData: /Channel/Application/Readers
+
+        #---Query System Chaincode (qscc) function to policy mapping for access control---#
+
+        #ACL policy for qscc's "GetChainInfo" function
+        qscc/GetChainInfo: /Channel/Application/Readers
+
+        #ACL policy for qscc's "GetBlockByNumber" function
+        qscc/GetBlockByNumber: /Channel/Application/Readers
+
+        #ACL policy for qscc's  "GetBlockByHash" function
+        qscc/GetBlockByHash: /Channel/Application/Readers
+
+        #ACL policy for qscc's "GetTransactionByID" function
+        qscc/GetTransactionByID: /Channel/Application/Readers
+
+        #ACL policy for qscc's "GetBlockByTxID" function
+        qscc/GetBlockByTxID: /Channel/Application/Readers
+
+        #---Configuration System Chaincode (cscc) function to policy mapping for access control---#
+
+        #ACL policy for cscc's "GetConfigBlock" function
+        cscc/GetConfigBlock: /Channel/Application/Readers
+
+        #ACL policy for cscc's "GetConfigTree" function
+        cscc/GetConfigTree: /Channel/Application/Readers
+
+        #ACL policy for cscc's "SimulateConfigTreeUpdate" function
+        cscc/SimulateConfigTreeUpdate: /Channel/Application/Writers
+
+        #---Miscellanesous peer function to policy mapping for access control---#
+
+        #ACL policy for invoking chaincodes on peer
+        peer/Proposal: /Channel/Application/Writers
+
+        #ACL policy for chaincode to chaincode invocation
+        peer/ChaincodeToChaincode: /Channel/Application/Readers
+
+        #---Events resource to policy mapping for access control###---#
+
+        #ACL policy for sending block events
+        event/Block: /Channel/Application/Readers
+
+        #ACL policy for sending filtered block events
+        event/FilteredBlock: /Channel/Application/Readers
+
+    # Organizations is the list of orgs which are defined as participants on
+    # the application side of the network.
+    Organizations:
+
+    # Policies defines the set of policies at this level of the config tree
+    # For Application policies, their canonical path is
+    #   /Channel/Application/<PolicyName>
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        Org1MemberPolicy:
+            Type: Signature
+            Rule: "OR('Org1MSP.member')"
+        Org2MemberPolicy:
+            Type: Signature
+            Rule: "OR('Org2MSP.member')"
+        Org1Org2MemberPolicy:
+            Type: Signature
+            Rule: "OR('Org1MSP.member','Org2MSP.member')"
+
+    # Capabilities describes the application level capabilities, see the
+    # dedicated Capabilities section elsewhere in this file for a full
+    # description
+    Capabilities:
+        <<: *ApplicationCapabilities
+```
+
+**Channel**与通道相关的配置
+```yaml
+Channel: &ChannelDefaults
+    # Policies defines the set of policies at this level of the config tree
+    # For Channel policies, their canonical path is
+    #   /Channel/<PolicyName>
+    Policies:
+        # Who may invoke the 'Deliver' API
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        # Who may invoke the 'Broadcast' API
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        # By default, who may modify elements at this config level
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+    # Capabilities describes the channel level capabilities, see the
+    # dedicated Capabilities section elsewhere in this file for a full
+    # description
+    Capabilities:
+        <<: *ChannelCapabilities
+```
+
+
+**Profile**configtxgen工具的参数，不同的配置文件在这里配置
+```yaml
+Profiles:
+
+    TwoOrgsOrdererGenesis:
+        <<: *ChannelDefaults
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+            - <<: *OrdererOrg
+              Policies:
+                  <<: *OrdererOrgPolicies
+                  Admins:
+                      Type: Signature
+                      Rule: "OR('OrdererMSP.admin')"
+        Consortiums:
+            TestConsortium:
+                Organizations:
+                - <<: *Org1
+                  Policies:
+                      <<: *Org1Policies
+                      Admins:
+                          Type: Signature
+                          Rule: "OR('Org1MSP.admin')"
+
+            SampleConsortium:
+                Organizations:
+                - <<: *Org1
+                  Policies:
+                      <<: *Org1Policies
+                      Admins:
+                          Type: Signature
+                          Rule: "OR('Org1MSP.admin')"
+                - <<: *Org2
+                  Policies:
+                      <<: *Org2Policies
+                      Admins:
+                          Type: Signature
+                          Rule: "OR('Org2MSP.admin')"
+
+    OneOrgChannel:
+        Consortium: TestConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+            - *Org1
+
+    TwoOrgsChannel:
+        Consortium: SampleConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+            - *Org1
+            - *Org2
+
+    DsChannel:
+        Consortium: SampleConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+            - *Org1
+            - *Org2
+```
+
+第一个configtx.yaml配置文件如下：
+```yaml
+Organizations:
+    - &OrdererOrg
+        Name: OrdererMSP
+        ID: OrdererMSP
+        MSPDir: ./crypto-config/ordererOrganizations/example.com/msp
+        AdminPrincipal: Role.ADMIN
+
+    - &Org1
+        Name: Org1MSP
+        ID: Org1MSP
+        MSPDir: ./crypto-config/peerOrganizations/org1.example.com/msp
+        AdminPrincipal: Role.ADMIN
+
+
+
+Orderer: &OrdererDefaults
+
+    # Orderer Type: The orderer implementation to start
+    # Available types are "solo" and "kafka"
+    OrdererType: solo
+    Addresses:
+        - orderer.example.com:7050
+    BatchTimeout: 500ms
+
+    BatchSize:
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 98 MB
+        PreferredMaxBytes: 512 KB
+    MaxChannels: 0
+    Organizations:
+
+        Application: &ApplicationDefaults
+   # Organizations is the list of orgs which are defined as participants on
+    # the application side of the network.
+    Organizations:
+   
+
+################################################################################
+#
+#   Profile
+#
+#   - Different configuration profiles may be encoded here to be specified
+#   as parameters to the configtxgen tool
+#
+################################################################################
+Profiles:
+
+    SampleOrg:
+      Orderer:
+        <<: *OrdererDefaults
+        Organizations:
+          - *OrdererOrg
+      Consortiums:
+        SampleConsortium:
+          Organizations:
+            - *OrdererOrg
+            - *Org1
+    
+    SampleChannel:
+      Consortium: SampleConsortium
+      Application:
+        Organizations:
+          - *Org1
+```
+
+1.创建创世块
+
+执行 configtxgen -profile SampleOrg -outputBlock ./channel-artifacts/gensis.block
+
+2. 通道配置
+
+configtxgen -profile SampleChannel -outputCreateChannelTx ./channel-artifacts/samplechannel.tx -channelID samplechannel
+
+至此，配置文件生成结束
