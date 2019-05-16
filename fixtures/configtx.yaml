@@ -1,0 +1,63 @@
+Organizations:
+    - &OrdererOrg
+        Name: OrdererMSP
+        ID: OrdererMSP
+        MSPDir: ./crypto-config/ordererOrganizations/example.com/msp
+        AdminPrincipal: Role.ADMIN
+
+    - &Org1
+        Name: Org1MSP
+        ID: Org1MSP
+        MSPDir: ./crypto-config/peerOrganizations/org1.example.com/msp
+        AdminPrincipal: Role.ADMIN
+
+
+
+Orderer: &OrdererDefaults
+
+    # Orderer Type: The orderer implementation to start
+    # Available types are "solo" and "kafka"
+    OrdererType: solo
+    Addresses:
+        - orderer.example.com:7050
+    BatchTimeout: 500ms
+
+    BatchSize:
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 98 MB
+        PreferredMaxBytes: 512 KB
+    MaxChannels: 0
+    Organizations:
+
+        Application: &ApplicationDefaults
+   # Organizations is the list of orgs which are defined as participants on
+    # the application side of the network.
+    Organizations:
+   
+
+################################################################################
+#
+#   Profile
+#
+#   - Different configuration profiles may be encoded here to be specified
+#   as parameters to the configtxgen tool
+#
+################################################################################
+Profiles:
+
+    SampleOrg:
+      Orderer:
+        <<: *OrdererDefaults
+        Organizations:
+          - *OrdererOrg
+      Consortiums:
+        SampleConsortium:
+          Organizations:
+            - *OrdererOrg
+            - *Org1
+    
+    SampleChannel:
+      Consortium: SampleConsortium
+      Application:
+        Organizations:
+          - *Org1
