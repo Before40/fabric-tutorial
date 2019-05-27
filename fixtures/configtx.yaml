@@ -3,20 +3,36 @@ Organizations:
         Name: OrdererMSP
         ID: OrdererMSP
         MSPDir: ./crypto-config/ordererOrganizations/example.com/msp
-        AdminPrincipal: Role.ADMIN
-
+        Policies: &OrdererOrgPolicies
+            Readers:
+              Type: Signature
+              Rule: "OR('OrdererMSP.member')"                
+            Writers:
+              Type: Signature
+              Rule: "OR('OrdererMSP.member')"
+            Admins:
+              Type: Signature
+              Rule: "OR('OrdererMSP.admin')"
     - &Org1
         Name: Org1MSP
         ID: Org1MSP
         MSPDir: ./crypto-config/peerOrganizations/org1.example.com/msp
         AdminPrincipal: Role.ADMIN
-
-
+        Policies: &Org1Policies
+            Readers:
+                Type: Signature
+                Rule: "OR('Org1MSP.member')"
+            Writers:
+                Type: Signature
+                Rule: "OR('Org1MSP.member')"
+            Admins:
+                Type: Signature
+                Rule: "OR('Org1MSP.admin')"
+        AnchorPeers:
+            - Host: peer0.org1.example.com
+              Port: 7051
 
 Orderer: &OrdererDefaults
-
-    # Orderer Type: The orderer implementation to start
-    # Available types are "solo" and "kafka"
     OrdererType: solo
     Addresses:
         - orderer.example.com:7050
@@ -27,14 +43,37 @@ Orderer: &OrdererDefaults
         AbsoluteMaxBytes: 98 MB
         PreferredMaxBytes: 512 KB
     MaxChannels: 0
-    Organizations:
-
-        Application: &ApplicationDefaults
-   # Organizations is the list of orgs which are defined as participants on
-    # the application side of the network.
+    Policies:
+      Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+      Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+      Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+      BlockValidation:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
     Organizations:
    
-
+Channel: &ChannelDefaults
+    Policies:
+        # Who may invoke the 'Deliver' API
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        # Who may invoke the 'Broadcast' API
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        # By default, who may modify elements at this config level
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+    # Capabilities:
+    #     <<: *ChannelCapabilities
 ################################################################################
 #
 #   Profile
@@ -46,15 +85,25 @@ Orderer: &OrdererDefaults
 Profiles:
 
     SampleOrg:
+      <<: *ChannelDefaults
       Orderer:
         <<: *OrdererDefaults
         Organizations:
-          - *OrdererOrg
+          - <<: *OrdererOrg
+            Policies:
+              <<: *OrdererOrgPolicies
+              Admins:
+                Type: Signature
+                Rule: "OR('OrdererMSP.admin')"
       Consortiums:
         SampleConsortium:
           Organizations:
-            - *OrdererOrg
-            - *Org1
+            - <<: *Org1
+              Policies:
+                <<: *Org1Policies
+                Admins:
+                  Type: Signature
+                  Rule: "OR('Org1MSP.admin')"
     
     SampleChannel:
       Consortium: SampleConsortium
