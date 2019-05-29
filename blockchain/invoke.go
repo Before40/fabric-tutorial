@@ -19,14 +19,21 @@ func (setup *FabricSetup) InvokeHello(value string) (string, error) {
 	transientDataMap := make(map[string][]byte)
 
 	transientDataMap["result"] = []byte("Transient data in hello invoke")
-	reg, notifier, err := setup.event.RegisterChaincodeEvent(setup.ChainCodeID, eventID)
+	reg, notifier, err :=
+		setup.event.RegisterChaincodeEvent(setup.ChainCodeID, eventID)
 	if err != nil {
 		return "", err
 	}
 
 	defer setup.event.Unregister(reg)
 
-	response, err := setup.client.Execute(channel.Request{ChaincodeID: setup.ChainCodeID, Fcn: args[0], Args: [][]byte{[]byte(args[1]), []byte(args[2]), []byte(args[3])}, TransientMap: transientDataMap})
+	response, err := setup.client.Execute(
+		channel.Request{
+			ChaincodeID:  setup.ChainCodeID,
+			Fcn:          args[0],
+			Args:         [][]byte{[]byte(args[1]), []byte(args[2]), []byte(args[3])},
+			TransientMap: transientDataMap},
+		channel.WithTargetEndpoints("peer0.org1.example.com;peer1.org1.example.com"))
 	if err != nil {
 		return "", fmt.Errorf("failed to move funds: %v", err)
 	}

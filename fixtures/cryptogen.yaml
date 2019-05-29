@@ -6,8 +6,8 @@ OrdererOrgs:
         SANS:
           - "localhost"
           - "127.0.0.1"
+          
 PeerOrgs:
-
   - Name: Org1
     Domain: org1.example.com
     EnableNodeOUs: false
