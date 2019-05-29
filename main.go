@@ -5,8 +5,6 @@ import (
 	"os"
 
 	"github.com/tramsyck/fabric-tutorial/blockchain"
-	"github.com/tramsyck/fabric-tutorial/web"
-	"github.com/tramsyck/fabric-tutorial/web/controllers"
 )
 
 func main() {
@@ -15,11 +13,11 @@ func main() {
 		ChannelID:     "samplechannel",
 		ChannelConfig: os.Getenv("GOPATH") + "/src/github.com/tramsyck/fabric-tutorial/fixtures/channel-artifacts/samplechannel.tx",
 
-		ChainCodeID:     "samplechannel",
+		ChainCodeID:     "heroes-service",
 		ChaincodeGoPath: os.Getenv("GOPATH"),
 		ChaincodePath:   "github.com/tramsyck/fabric-tutorial/chaincode",
 		OrgAdmin:        "Admin",
-		OrgName:         "Org1",
+		OrgName:         "org1",
 		ConfigFile:      "config.yaml",
 		UserName:        "User1",
 	}
@@ -32,15 +30,15 @@ func main() {
 
 	defer fSetup.CloseSDK()
 
-	err = fSetup.InstallAndInstantiateCC()
-	if err != nil {
-		fmt.Printf("Unable to install and instantiate the chaincode:%v\n", err)
-		return
-	}
+	// err = fSetup.InstallAndInstantiateCC()
+	// if err != nil {
+	// 	fmt.Printf("Unable to install and instantiate the chaincode:%v\n", err)
+	// 	return
+	// }
 
-	app := &controllers.Application{
-		Fabric: &fSetup,
-	}
+	// app := &controllers.Application{
+	// 	Fabric: &fSetup,
+	// }
 
-	web.Serve(app)
+	// web.Serve(app)
 }

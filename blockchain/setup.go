@@ -51,7 +51,6 @@ func (setup *FabricSetup) Initialize() error {
 	fmt.Println("SDK created")
 
 	resourceManagerClientContext := setup.sdk.Context(fabsdk.WithUser(setup.OrgAdmin), fabsdk.WithOrg(setup.OrgName))
-
 	if err != nil {
 		return errors.WithMessage(err, "failed to load Admin identify")
 	}
@@ -74,9 +73,7 @@ func (setup *FabricSetup) Initialize() error {
 		return errors.WithMessage(err, "failed to get admin signing identity")
 	}
 
-	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID,
-		ChannelConfigPath: setup.ChannelConfig,
-		SigningIdentities: []msp.SigningIdentity{adminIdentify}}
+	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfigPath: setup.ChannelConfig, SigningIdentities: []msp.SigningIdentity{adminIdentify}}
 	txID, err := setup.admin.SaveChannel(req, resmgmt.WithOrdererEndpoint(setup.OrdererID))
 	if err != nil || txID.TransactionID == "" {
 		return errors.WithMessage(err, "failed to save channel")
@@ -102,29 +99,16 @@ func (setup *FabricSetup) InstallAndInstantiateCC() error {
 	}
 	fmt.Println("ccPkg created")
 
-	installCCReq := resmgmt.InstallCCRequest{
-		Name:    setup.ChainCodeID,
-		Path:    setup.ChaincodePath,
-		Version: "0",
-		Package: ccPkg}
-	_, err = setup.admin.InstallCC(
-		installCCReq,
-		resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	installCCReq := resmgmt.InstallCCRequest{Name: setup.ChainCodeID, Path: setup.ChaincodePath, Version: "0", Package: ccPkg}
+	_, err = setup.admin.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		return errors.WithMessage(err, "failed to install chaincode")
 
 	}
 	fmt.Println("Chaincode installed")
 
-	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP"})
-	resp, err := setup.admin.InstantiateCC(
-		setup.ChannelID,
-		resmgmt.InstantiateCCRequest{
-			Name:    setup.ChainCodeID,
-			Path:    setup.ChaincodeGoPath,
-			Version: "0",
-			Args:    [][]byte{[]byte("init")},
-			Policy:  ccPolicy})
+	ccPolicy := cauthdsl.SignedByAnyMember([]string{"org1.example.com"})
+	resp, err := setup.admin.InstantiateCC(setup.ChannelID, resmgmt.InstantiateCCRequest{Name: setup.ChannelID, Path: setup.ChaincodeGoPath, Version: "0", Args: [][]byte{[]byte("init")}, Policy: ccPolicy})
 
 	if err != nil || resp.TransactionID == "" {
 		return errors.WithMessage(err, "failed to instantiate the chaincde")
@@ -132,8 +116,7 @@ func (setup *FabricSetup) InstallAndInstantiateCC() error {
 
 	fmt.Println("Chaincode instantiated")
 
-	clientContext := setup.sdk.ChannelContext(setup.ChannelID,
-		fabsdk.WithUser(setup.UserName))
+	clientContext := setup.sdk.ChannelContext(setup.ChannelID, fabsdk.WithUser(setup.UserName))
 	setup.client, err = channel.New(clientContext)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create new channel client")
