@@ -74,39 +74,23 @@ Channel: &ChannelDefaults
             Rule: "MAJORITY Admins"
     # Capabilities:
     #     <<: *ChannelCapabilities
-################################################################################
-#
-#   Profile
-#
-#   - Different configuration profiles may be encoded here to be specified
-#   as parameters to the configtxgen tool
-#
-################################################################################
+Application: &ApplicationDefaults
+  Organizations:
+
 Profiles:
 
     SampleOrg:
-      <<: *ChannelDefaults
       Orderer:
         <<: *OrdererDefaults
         Organizations:
-          - <<: *OrdererOrg
-            Policies:
-              <<: *OrdererOrgPolicies
-              Admins:
-                Type: Signature
-                Rule: "OR('OrdererMSP.admin')"
+          - *OrdererOrg
+      Application:
+        <<: *ApplicationDefaults
+        Organizations:
+          - *Org1
+      Consortium:  SampleConsortium
       Consortiums:
         SampleConsortium:
           Organizations:
-            - <<: *Org1
-              Policies:
-                <<: *Org1Policies
-                Admins:
-                  Type: Signature
-                  Rule: "OR('Org1MSP.admin')"
-    
-    SampleChannel:
-      Consortium: SampleConsortium
-      Application:
-        Organizations:
-          - *Org1
+            - *Org1
+            - *OrdererOrg
