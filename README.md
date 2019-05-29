@@ -526,7 +526,11 @@ services:
       - ORDERER_GENERAL_GENESISPROFILE=SampleChain
       - ORDERER_GENERAL_GENESISMETHOD=file
       - ORDERER_GENERAL_GENESISFILE=/var/hyperledger/orderer/genesis.block
+<<<<<<< HEAD
       - ORDERER_GENERAL_LOCALMSPID=example.com
+=======
+      - ORDERER_GENERAL_LOCALMSPID=org1.example.com
+>>>>>>> basic
       - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
       - ORDERER_GENERAL_TLS_ENABLED=true
       - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
